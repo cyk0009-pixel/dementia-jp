@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>認知症 BPSD ケア管理ソリューション</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap');
+        body { font-family: 'Noto Sans JP', sans-serif; background-color: #f1f5f9; }
+        .card { background: white; border-radius: 1rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-6xl mx-auto bg-white shadow-2xl rounded-2xl overflow-hidden">
+        
+        <!-- Header -->
+        <header class="bg-indigo-900 text-white p-8 text-center">
+            <h1 class="text-3xl font-bold italic">認知症 BPSD ケア管理ソリューション</h1>
+            <p class="mt-2 text-indigo-200">NPI-Qに基づく行動・心理症状評価および個別最適化プログラムの提供</p>
+        </header>
+
+        <main class="p-8">
+            <!-- Section 1: 基本情報 -->
+            <section class="mb-10 border-b pb-8">
+                <h2 class="text-xl font-bold mb-6 flex items-center"><span class="bg-indigo-600 text-white rounded-full w-8 h-8 flex items-center justify-center mr-2 text-sm">1</span> 基本情報の入力</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label class="block text-sm font-semibold mb-1">利用者様 お名前</label>
+                        <input type="text" id="p_name" class="w-full border rounded p-2 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="例：田中 花子">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold mb-1">生年月日</label>
+                        <input type="text" id="p_birth" class="w-full border rounded p-2 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="YYYYMMDD">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold mb-1">性別</label>
+                        <select id="p_gender" class="w-full border rounded p-2 focus:ring-2 focus:ring-indigo-500 outline-none">
+                            <option value="女">女性</option>
+                            <option value="男">男性</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold mb-1">ご家族との続柄</label>
+                        <input type="text" id="p_relation" class="w-full border rounded p-2 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="例：長男、長女">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold mb-1">同居の有無</label>
+                        <select id="p_living" class="w-full border rounded p-2 focus:ring-2 focus:ring-indigo-500 outline-none">
+                            <option value="はい">はい（同居）</option>
+                            <option value="いいえ">いいえ（別居）</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold mb-1">面会・訪問頻度（週単位）</label>
+                        <input type="number" id="p_visit" class="w-full border rounded p-2 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="週 ( ) 回">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold mb-1">評価実施日</label>
+                         <input type="text" id="test_date" class="w-full border rounded p-2 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="YYYYMMDD">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold mb-1">担当者（作成者）</label>
+                        <input type="text" id="admin_name" class="w-full border rounded p-2 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="担当者名">
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 2: KNPI-Q 設問 -->
+            <section class="mb-10">
+                <div class="bg-gray-50 p-6 rounded-lg mb-6 border-l-4 border-indigo-500">
+                    <h3 class="font-bold text-lg mb-2">※ 評価基準および採点方法</h3>
+                    <p class="text-sm text-gray-600 leading-relaxed italic">
+                        過去1ヶ月間の変化について回答してください。<b>重症度</b>（1:軽度、2:中等度、3:高度）と 
+                        <b>介護者の負担度</b>（0:全くなし 〜 5:著しく高度）をそれぞれ選択します。各項目のスコアは、これら2つの値の積で算出されます。
+                    </p>
+                </div>
+
+                <div id="knpi_form" class="space-y-4">
+                    <!-- JSで設問を生成 -->
+                </div>
+
+                <div class="mt-10">
+                    <button onclick="saveAndCalculate()" class="w-full bg-indigo-700 text-white py-4 rounded-xl font-bold text-lg hover:bg-indigo-800 transition shadow-lg">
+                        評価結果を確認して保存する
+                    </button>
+                </div>
+            </section>
+
+            <!-- Section 3: 結果分析 -->
+            <section id="analysis_section" class="hidden mb-10 card p-8 bg-white border-2 border-indigo-100">
+                <h2 class="text-2xl font-bold mb-6 text-indigo-900 border-b pb-2">📊 BPSD 詳細分析結果</h2>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                    <div class="flex justify-center">
+                        <canvas id="bpsdChart" style="max-width: 450px; max-height: 450px;"></canvas>
+                    </div>
+                    <div class="space-y-6">
+                        <div class="bg-indigo-50 p-6 rounded-xl border border-indigo-200">
+                            <h3 class="font-bold text-indigo-800 mb-2">📋 専門家による分析所見</h3>
+                            <p id="expert_opinion" class="text-gray-700 leading-relaxed text-lg">
+                                <!-- 分析所見が自動生成されます -->
+                            </p>
+                        </div>
+                        <div id="history_view" class="grid grid-cols-2 gap-4">
+                            <!-- 履歴サマリー -->
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-10">
+                    <button onclick="generatePlan()" class="w-full bg-emerald-600 text-white py-5 rounded-xl font-bold text-xl hover:bg-emerald-700 transition animate-pulse shadow-lg">
+                        個人別 2026年度 ケアプログラムを設計する
+                    </button>
+                </div>
+            </section>
+
+            <!-- Section 4: プログラム計画 -->
+            <section id="program_plan" class="hidden">
+                <div class="flex justify-between items-center mb-8 border-b-4 border-emerald-500 pb-4">
+                    <h2 class="text-3xl font-bold text-indigo-900 italic uppercase">2026 Monthly BPSD Care Plan</h2>
+                    <button onclick="window.print()" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg font-bold text-sm">🖨️ 計画書を印刷する</button>
+                </div>
+                <div id="plan_grid" class="space-y-12">
+                    <!-- 月別プログラムを生成 -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        const domains = [
+            { id: 1, title: "妄想", desc: "自分の物が盗まれたと信じ込んだり、誰かが自分を傷つけようとしていると誤解していますか？" },
+            { id: 2, title: "幻覚", desc: "誰かの声が聞こえるような仕草をしたり、誰もいないのに会話をしたりしますか？" },
+            { id: 3, title: "焦燥・攻撃性", desc: "頑固になったり、周囲の助けに対して抵抗したりしますか？" },
+            { id: 4, title: "抑うつ・気分低下", desc: "悲しそうにしていたり、気分が沈んでいるように見えますか？ 泣くことはありますか？" },
+            { id: 5, title: "不安", desc: "介護者と離れると不安がったり、怒ったりしますか？ 非常に緊張しているように見えますか？" },
+            { id: 6, title: "多幸感", desc: "特別な理由もなく過度に幸せそうに見えたり、気分が良すぎたりしますか？" },
+            { id: 7, title: "無関心（アパシー）", desc: "日常生活への関心が減ったり、他人の活動に興味を示さなくなったりしましたか？" },
+            { id: 8, title: "脱抑制", desc: "衝動的に行動したり、見知らぬ人に対して失礼な態度をとったりしますか？" },
+            { id: 9, title: "易刺激性（いらだち）", desc: "焦りを感じやすかったり、些細なことで怒ったりしますか？ 予定が遅れるのを待てませんか？" },
+            { id: 10, title: "異常な反復行動", desc: "目的なく歩き回ったり、引き出しを何度も開け閉めするなどの繰り返し行動がありますか？" },
+            { id: 11, title: "睡眠障害", desc: "夜中に目を覚まして人を起こしたり、早朝に起きすぎたり、昼寝が多すぎたりしますか？" },
+            { id: 12, title: "食行動の異常", desc: "体重の変化があったり、好きな食べ物の種類が急に変わったりしましたか？" }
+        ];
+
+        // 日本の文化に合わせた専門プログラムDB
+        const extendedDB = {
+            1: [ // 妄想/幻覚ターゲット
+                { name: "リアリティ・オリエンテーション掲示板", method: "日付、季節、場所を毎朝一緒に確認する", effect: "見当識の維持および現実認識の強化", cat: "認知" },
+                { name: "安心絵合わせ", method: "馴染みのある日用品カードを用いた視覚刺激", effect: "知覚の歪みを抑制し情緒を安定させる", cat: "認知" },
+                { name: "自然音・環境音療法", method: "故郷の風景や自然の音を聴く", effect: "幻聴の頻度減少およびリラックス効果", cat: "音楽" },
+                { name: "なじみの品回想", method: "個人的に意味のある思い出の品に触れる", effect: "自己アイデンティティの強化と妄想の抑制", cat: "感覚" },
+                { name: "我が家の間取り描き", method: "住み慣れた空間の構造を思い出しながら描く", effect: "空間認知能力の回復と不安の緩和", cat: "アート" },
+                { name: "定期的な安心声掛けルーチン", method: "決まった時間に声掛けを行い、対話を増やす", effect: "被害妄想の緩和と信頼関係の構築", cat: "心理" },
+                { name: "家族アルバムの閲覧", method: "家族との関係を再確認する活動", effect: "対人関係に基づく現実感の増進", cat: "回想" }
+            ],
+            3: [ // 攻撃性/焦燥/易刺激性ターゲット
+                { name: "ラベンダー・アロマハンドマッサージ", method: "手足に優しい圧をかけながら香りで癒やす", effect: "焦燥感の軽減と副交感神経の活性化", cat: "感覚" },
+                { name: "粘土細工・陶芸体験", method: "手のひらでこねたり形を作ったりする", effect: "負のエネルギーの発散とストレス緩和", cat: "アート" },
+                { name: "クラシック音楽と深呼吸", method: "穏やかな旋律に合わせて腹式呼吸を行う", effect: "心拍数の安定と突発的行動の抑制", cat: "音楽" },
+                { name: "タオル畳みの手伝い", method: "繰り返しの家事動作を役割として依頼する", effect: "エネルギーの分散と自己有用感の付与", cat: "生活" },
+                { name: "足湯セラピー", method: "適温の湯に足を浸してリラックスする", effect: "全身の弛緩と身体的緊張の解消", cat: "身体" },
+                { name: "ボタンの仕分け作業", method: "大きさや色の異なるボタンを容器に分ける", effect: "注意力の集中による焦燥行動の転移", cat: "認知" },
+                { name: "スポンジボール投げ", method: "柔らかいボールを的に向かって投げる", effect: "身体的な怒り(Anger)の安全な発散", cat: "身体" }
+            ],
+            4: [ // 抑うつ/気分低下/無関心ターゲット
+                { name: "自分史フォトブック作成", method: "輝いていた瞬間の写真とエピソードを綴る", effect: "自尊心の向上と抑うつ感の改善", cat: "回想" },
+                { name: "園芸・植物の世話係", method: "成長の早い植物に毎日水をやる", effect: "生命への愛着と日常の意欲向上", cat: "園芸" },
+                { name: "日光浴を兼ねた散歩", method: "午前10時頃にセロトニン合成を促す", effect: "情緒的活力の付与と気分の落ち込み防止", cat: "身体" },
+                { name: "感謝日記の代筆", method: "今日あった良いことを一つだけ話してもらう", effect: "肯定的思考の誘導と孤立感の解消", cat: "心理" },
+                { name: "昔遊び・けん玉/お手玉", method: "一緒に応援しながら目標を達成する", effect: "社会的相互作用と楽しみの提供", cat: "身体" },
+                { name: "生け花体験", method: "季節の花を瓶に生け、配置を楽しむ", effect: "感覚的な喜びと心理的満足感", cat: "アート" },
+                { name: "昭和の歌謡曲・合唱", method: "愛唱歌の歌詞を見ながら一緒に歌う", effect: "エンドルフィンの分泌と情緒的紐帯の強化", cat: "音楽" }
+            ],
+            10: [ // 反復行動/脱抑制ターゲット
+                { name: "糸巻き・糸解き作業", method: "絡まった糸をきれいに巻き直す", effect: "無意味な繰り返しを有意義な活動へ転換", cat: "認知" },
+                { name: "手触り素材の感触体験", method: "様々な布地や小豆の感触を指先で感じる", effect: "触覚刺激の充足と徘徊行動の減少", cat: "感覚" },
+                { name: "豆の選別（黒豆と白豆）", method: "二種類の豆をカップに分類する", effect: "微細運動への集中による行動制御", cat: "認知" },
+                { name: "ちぎり絵・コラージュ", method: "雑誌や色紙を細かくちぎって貼る", effect: "衝動的エネルギーの消費と指先の維持", cat: "アート" },
+                { name: "紙芝居・読み聞かせ", method: "ストーリーテリングによる聴覚的集中", effect: "散漫さの抑制と情緒の安定", cat: "回想" },
+                { name: "リズム拍手", method: "一定のテンポに合わせて手拍子を打つ", effect: "自己調節能力の強化と活力向上", cat: "音楽" },
+                { name: "風景パズル（ラージサイズ）", method: "ピースの大きい風景写真を完成させる", effect: "視覚的注意持続時間の拡大", cat: "認知" }
+            ],
+            11: [ // 睡眠/食事ターゲット
+                { name: "午前中の日光浴体操", method: "窓際で背伸びや関節を動かす", effect: "生体リズムの正常化と睡眠の質向上", cat: "身体" },
+                { name: "五感刺激の彩り御膳", method: "色彩豊かな食材を使い、視覚と香りを強調", effect: "食欲不振の改善と味覚刺激", cat: "食事" },
+                { name: "入眠前のヒーリング音楽", method: "静かな波の音や癒やしの旋律を聴く", effect: "入眠誘導と夜間不安の軽減", cat: "音楽" },
+                { name: "季節のフルーツ盛り付け", method: "果物をきれいに飾り付け、他者と分かち合う", effect: "食を通じた交流と栄養摂取の促進", cat: "食事" },
+                { name: "足裏マッサージとハーブティー", method: "足を刺激しながら温かい飲み物を摂る", effect: "心身の弛緩と夜間徘徊の抑制", cat: "感覚" },
+                { name: "昔の料理レシピ談義", method: "過去の調理法や食事風景を語り合う", effect: "食習慣の是正と楽しい食事の雰囲気作り", cat: "回想" },
+                { name: "ラジオ風入眠読み聞かせ", method: "落ち着いた声での語りを聞き流す", effect: "不安解消と自然な入眠の誘導", cat: "音楽" }
+            ]
+        };
+
+        const commonDB = [
+            { name: "ことわざ完成クイズ", method: "提示されたことわざの後半を当てる", effect: "言語流暢性と短期記憶の維持", cat: "認知" },
+            { name: "間違い探し", method: "二つの絵の間の微細な違いを見つける", effect: "視知覚的集中力と処理速度の向上", cat: "認知" },
+            { name: "和柄の塗り絵", method: "伝統的な模様に色を付けていく", effect: "創造的表現と達成感の付与", cat: "アート" },
+            { name: "連想ゲーム", method: "提示された単語から連想する言葉を言う", effect: "思考の柔軟性と語彙力の刺激", cat: "認知" },
+            { name: "指体操・指の数遊び", method: "両手で異なる数字を表現する", effect: "左右脳の協調と認知機能の強化", cat: "身体" },
+            { name: "絵カード合わせ", method: "伏せたカードから同じ絵柄を選ぶ", effect: "ワーキングメモリの改善", cat: "認知" },
+            { name: "クロスワードパズル", method: "ヒントを読み、マスを埋めていく", effect: "論理的思考の維持", cat: "認知" },
+            { name: "季節の貼り絵", method: "季節にちなんだ素材を貼り付ける", effect: "季節感の醸成と微細運動", cat: "アート" },
+            { name: "あやとり", method: "介護者と一緒に紐で形を作る", effect: "協調性と空間認知の維持", cat: "生活" },
+            { name: "ニュース要約トーク", method: "今日の主なニュースを短く伝える", effect: "最新情報の受容と現実見当識", cat: "認知" },
+            { name: "香り袋（サシェ）作り", method: "乾燥させた花びらを袋に詰める", effect: "嗅覚刺激と情緒的満足", cat: "感覚" },
+            { name: "茶道体験（簡易式）", method: "お茶を点てて味わう静かな時間", effect: "集中力の強化と礼儀作法への刺激", cat: "生活" },
+            { name: "風船バレー", method: "椅子に座ったまま風船を打ち合う", effect: "上半身の筋力と反応速度の向上", cat: "身体" },
+            { name: "イントロクイズ", method: "曲の冒頭を聴いて曲名を当てる", effect: "聴覚的識別力と楽しみの共有", cat: "音楽" },
+            { name: "気功・太極拳風体操", method: "ゆっくりとした動作で全身を伸ばす", effect: "身体バランスと柔軟性の増大", cat: "身体" }
+        ];
+
+        const form = document.getElementById('knpi_form');
+        domains.forEach(d => {
+            const div = document.createElement('div');
+            div.className = "p-5 border rounded-xl bg-white shadow-sm flex flex-wrap items-center gap-4 justify-between";
+            div.innerHTML = `
+                <div class="flex-1 min-w-[300px]">
+                    <h4 class="font-bold text-indigo-900">${d.id}. ${d.title}</h4>
+                    <p class="text-sm text-gray-500">${d.desc}</p>
+                </div>
+                <div class="flex gap-4 items-center">
+                    <label class="flex items-center gap-1 text-xs font-bold">症状の有無<input type="checkbox" class="npi-check w-5 h-5" data-id="${d.id}"></label>
+                    <div class="flex flex-col">
+                        <span class="text-[10px] text-gray-400">重症度(1-3)</span>
+                        <select class="npi-sev border rounded p-1 text-sm"><option value="1">1</option><option value="2">2</option><option value="3">3</option></select>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="text-[10px] text-gray-400">負担度(0-5)</span>
+                        <select class="npi-dis border rounded p-1 text-sm"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select>
+                    </div>
+                </div>
+            `;
+            form.appendChild(div);
+        });
+
+        let history = [];
+        let bpsdChart = null;
+
+        function saveAndCalculate() {
+            const name = document.getElementById('p_name').value;
+            if(!name) { alert("利用者様のお名前を入力してください。"); return; }
+            
+            const checks = document.querySelectorAll('.npi-check');
+            const sevs = document.querySelectorAll('.npi-sev');
+            const diss = document.querySelectorAll('.npi-dis');
+            
+            let currentScores = [];
+            let total = 0;
+
+            checks.forEach((c, i) => {
+                if(c.checked) {
+                    const s = parseInt(sevs[i].value) * parseInt(diss[i].value);
+                    currentScores.push(s);
+                    total += s;
+                } else {
+                    currentScores.push(0);
+                }
+            });
+
+            const entry = { name, date: document.getElementById('test_date').value || '2026-01-01', total, scores: currentScores };
+            history.push(entry);
+
+            const maxIdx = currentScores.indexOf(Math.max(...currentScores));
+            const opinion = `現在、${name}様は「${domains[maxIdx].title}」の領域で最も高い数値を示しており、これに関連した集中的な非薬物療法による介入が必要です。 
+            KNPI-Qの総得点は${total}点であり、高リスク群の管理として週次で設計されたパーソナライズ・プログラムを通じて症状の緩和を図ります。 
+            特に「${domains[maxIdx].title}」症状軽減のための活動を前半期に重点配置し、介護者の負担軽減とご本人の情緒的安定を誘導します。`;
+            
+            document.getElementById('expert_opinion').innerText = opinion;
+            document.getElementById('analysis_section').classList.remove('hidden');
+            
+            drawChart(currentScores);
+            updateHistoryUI(name);
+            window.scrollTo({ top: document.getElementById('analysis_section').offsetTop - 50, behavior: 'smooth' });
+        }
+
+        function drawChart(data) {
+            const ctx = document.getElementById('bpsdChart').getContext('2d');
+            if(bpsdChart) bpsdChart.destroy();
+            bpsdChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: domains.map(d => d.title),
+                    datasets: [{
+                        label: '領域別 BPSD 強度',
+                        data: data,
+                        backgroundColor: 'rgba(79, 70, 229, 0.2)',
+                        borderColor: 'rgb(79, 70, 229)',
+                        borderWidth: 3,
+                        pointBackgroundColor: 'rgb(79, 70, 229)'
+                    }]
+                },
+                options: { scales: { r: { beginAtZero: true, max: 15, ticks: { display: false } } } }
+            });
+        }
+
+        function updateHistoryUI(name) {
+            const view = document.getElementById('history_view');
+            view.innerHTML = history.filter(h => h.name === name).map(h => `
+                <div class="bg-white p-3 rounded-lg border shadow-sm">
+                    <p class="text-[10px] text-gray-400">${h.date}</p>
+                    <p class="font-bold text-indigo-600">${h.total} 点</p>
+                </div>
+            `).join('');
+        }
+
+        function generatePlan() {
+            const planGrid = document.getElementById('plan_grid');
+            document.getElementById('program_plan').classList.remove('hidden');
+            planGrid.innerHTML = "";
+            const lastData = history[history.length - 1];
+            
+            const sortedIndices = lastData.scores.map((s, i) => ({s, i})).sort((a, b) => b.s - a.s);
+            const primarySymptomId = sortedIndices[0].i + 1;
+            const secondarySymptomId = sortedIndices[1].s > 0 ? sortedIndices[1].i + 1 : null;
+
+            let targetPool = [];
+            if(extendedDB[primarySymptomId]) targetPool.push(...extendedDB[primarySymptomId]);
+            if(secondarySymptomId && extendedDB[secondarySymptomId]) targetPool.push(...extendedDB[secondarySymptomId]);
+            
+            const finalPool = [...targetPool, ...commonDB];
+            const months = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
+            
+            months.forEach((month, mIdx) => {
+                const mDiv = document.createElement('div');
+                mDiv.className = "bg-slate-50 p-6 rounded-2xl border-l-8 border-emerald-500 shadow-sm";
+                mDiv.innerHTML = `<h3 class="text-2xl font-bold mb-6 text-gray-800">📅 ${month} 個別ケアプログラム</h3>`;
+                
+                const wGrid = document.createElement('div');
+                wGrid.className = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6";
+
+                for(let w=1; w<=4; w++) {
+                    const progIdx = (mIdx * 4 + (w - 1)) % finalPool.length;
+                    const prog = finalPool[progIdx];
+                    
+                    const wDiv = document.createElement('div');
+                    wDiv.className = "bg-white p-5 rounded-xl border hover:border-emerald-500 transition shadow-sm flex flex-col justify-between h-full";
+                    wDiv.innerHTML = `
+                        <div>
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="text-xs font-bold bg-indigo-100 text-indigo-700 px-2 py-1 rounded">第 ${w} 週</span>
+                                <span class="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">${prog.cat}</span>
+                            </div>
+                            <h4 class="font-bold text-gray-900 mb-2 text-lg">${prog.name}</h4>
+                            <p class="text-sm text-gray-600 leading-snug mb-4"><b>内容:</b> ${prog.method}</p>
+                        </div>
+                        <div class="pt-3 border-t border-dashed">
+                            <p class="text-[11px] text-blue-600 font-bold italic">📍 期待される効果: ${prog.effect}</p>
+                        </div>
+                    `;
+                    wGrid.appendChild(wDiv);
+                }
+                mDiv.appendChild(wGrid);
+                planGrid.appendChild(mDiv);
+            });
+            window.scrollTo({ top: planGrid.offsetTop - 50, behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
